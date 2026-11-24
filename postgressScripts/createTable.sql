@@ -1,0 +1,10 @@
+CREATE TABLE products(
+id SERIAL PRIMARY KEY,
+name VARCHAR(50) NOT NULL,
+category VARCHAR(50) NOT NULL,
+price Numeric(10,2) NOT NULL,
+quantity INTEGER NOT NULL DEFAULT 0,
+sku VARCHAR(50) UNIQUE NOT NULL,
+description TEXT,
+is_active BOOLEAN DEFAULT TRUE
+);
