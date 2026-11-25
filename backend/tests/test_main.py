@@ -483,3 +483,45 @@ def test_delete_supplier(client, db_session):
 
     assert deleted_supplier is None 
   
+  
+def test_delete_supplier_not_found(client):
+    response=client.delete("/suppliers/9999")  
+  
+    assert response.status_code==404
+    assert response.json()["message"]=="Supplier not found"
+    
+def test_delete_supplier_with_products(client, db_session):
+    category = Category(name="Test Category")
+    supplier = Supplier(name="Linked Supplier")
+
+    db_session.add_all([category, supplier])
+    db_session.flush()
+
+    product = Product(
+        name="Test Product",
+        price=100,
+        sku="TEST-LINK-001",
+        category_id=category.id,
+        supplier_id=supplier.id
+    )
+
+    db_session.add(product)
+    db_session.flush()
+
+    response = client.delete(f"/suppliers/{supplier.id}")
+
+    assert response.status_code == 409
+    assert response.json()["message"] == (
+        "Cannot delete supplier because products are linked to it"
+    )
+
+    existing_supplier = db_session.query(Supplier).filter(
+        Supplier.id == supplier.id
+    ).first()
+
+    assert existing_supplier is not None   
+    
+    
+    
+    
+    
