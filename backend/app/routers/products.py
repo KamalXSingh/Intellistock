@@ -59,13 +59,14 @@ def create_product(
         
     except IntegrityError as e:
         db.rollback()
+        print("Constraint name:", e.orig.diag.constraint_name)
 
         error_message = str(e.orig)
 
-        if "fk_products_category" in error_message:
+        if "products_category_id_fkey" in error_message:
             detail = "Invalid category_id"
 
-        elif "fk_supplier" in error_message:
+        elif "products_supplier_id_fkey" in error_message:
             detail = "Invalid supplier_id"
 
         elif "products_sku_key" in error_message:
@@ -172,8 +173,17 @@ def delete_product(
             detail="Product not found"
         )
 
-    db.delete(existing_product)
-    db.commit()
+    try:
+        db.delete(existing_product)
+        db.commit()
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete product because it has associated records"
+    )
 
     return {"message": "Product deleted successfully"}
 
@@ -201,3 +211,8 @@ def get_product_supplier(
         "supplier_id": product.supplier.id,
         "supplier_name": product.supplier.name
     }
+    
+    
+    
+    
+    
