@@ -1,5 +1,6 @@
 from fastapi import APIRouter,Depends,HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
 
 from app.database.connection import get_db
 from app.models.suppliers import Supplier
@@ -12,7 +13,7 @@ router= APIRouter(
     tags=["Suppliers"]
 )
 
-@router.post("/",response_model=SupplierResponse)
+@router.post("/")
 def create_supplier(
     supplier:SupplierCreate,
     db:Session= Depends(get_db)
@@ -23,16 +24,25 @@ def create_supplier(
     db.commit()
     db.refresh(new_supplier)
     
-    return new_supplier
+    return {
+        "success": True,
+        "message": "Supplier created successfully",
+        "data": new_supplier
+}
 
-@router.get("/",response_model=list[SupplierResponse])
+@router.get("/")
 def get_suppliers(db:Session =Depends(get_db)):
-    suppliers=db.query(Supplier).all()
-    return suppliers
+    suppliers=db.query(Supplier).options(
+        joinedload(Supplier.products)).all()
+    return {
+        "success": True,
+        "message": "Suppliers retrieved successfully",
+        "data": suppliers
+}
 
-@router.get("/{supplier_id}", response_model=SupplierResponse)
+@router.get("/{supplier_id}")
 def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
-    supplier = db.query(Supplier).filter(
+    supplier = db.query(Supplier).options(joinedload(Supplier.products)).filter(
         Supplier.id == supplier_id
     ).first()
 
@@ -42,9 +52,13 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
             detail="Supplier not found"
         )
 
-    return supplier
+    return {
+        "success": True,
+        "message": "Supplier retrieved successfully",
+        "data": supplier
+}
 
-@router.patch("/{supplier_id}", response_model=SupplierResponse)
+@router.patch("/{supplier_id}")
 def update_supplier(
     supplier_id: int,
     supplier_data: SupplierUpdate,
@@ -68,7 +82,11 @@ def update_supplier(
     db.commit()
     db.refresh(supplier)
 
-    return supplier
+    return {
+        "success": True,
+        "message": "Supplier updated successfully",
+        "data": supplier
+}
 
 @router.delete("/{supplier_id}")
 def delete_supplier(
@@ -99,4 +117,8 @@ def delete_supplier(
     db.delete(supplier)
     db.commit()
 
-    return {"message": "Supplier deleted successfully"}
+    return {
+        "success": True,
+        "message": "Supplier deleted successfully",
+        "data": None
+}

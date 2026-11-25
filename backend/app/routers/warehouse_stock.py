@@ -36,7 +36,13 @@ def get_all_stock(
             WarehouseStock.product_id==product_id
         )
         
-    return query.all()
+    stocks=query.all()
+    
+    return {
+        "success": True,
+        "message": "Stock records retrieved successfully",
+        "data": stocks
+    }
 
 @router.post('/in')
 def stock_in(
@@ -101,11 +107,14 @@ def stock_in(
         
         db.refresh(stock)
         
-        return {
-            "message": "Stock added successfully",
-            "product_id": stock.product_id,
-            "warehouse_id": stock.warehouse_id,
-            "quantity": stock.quantity
+        return{
+            "success":True,
+            "message":"Stock added succesfully",
+            "data":{
+                "product_id": stock.product_id,
+                "warehouse_id": stock.warehouse_id,
+                "quantity": stock.quantity        
+            }
         }
         
     except SQLAlchemyError:
@@ -180,11 +189,14 @@ def stock_out(
         db.refresh(stock)
 
         return {
+            "success": True,
             "message": "Stock deducted successfully",
-            "product_id": stock.product_id,
-            "warehouse_id": stock.warehouse_id,
-            "quantity": stock.quantity
-        }
+            "data": {
+                "product_id": stock.product_id,
+                "warehouse_id": stock.warehouse_id,
+                "quantity": stock.quantity
+    }
+}
     except SQLAlchemyError:
         logger.exception("Failed to remove stock")
         db.rollback()
@@ -284,14 +296,17 @@ def transfer_stock(
 )
 
         return {
+            "success": True,
             "message": "Stock transferred successfully",
-            "product_id": transfer_data.product_id,
-            "source_warehouse_id": transfer_data.source_warehouse_id,
-            "destination_warehouse_id": transfer_data.destination_warehouse_id,
-            "transferred_quantity": transfer_data.quantity,
-            "source_remaining": source_stock.quantity,
-            "destination_total": destination_stock.quantity
-        }
+            "data": {
+                "product_id": transfer_data.product_id,
+                "source_warehouse_id": transfer_data.source_warehouse_id,
+                "destination_warehouse_id": transfer_data.destination_warehouse_id,
+                "transferred_quantity": transfer_data.quantity,
+                "source_remaining": source_stock.quantity,
+                "destination_total": destination_stock.quantity
+    }
+}
 
 
 
@@ -328,11 +343,14 @@ def update_reorder_level(
     db.refresh(stock)
 
     return {
+        "success": True,
         "message": "Reorder level updated successfully",
-        "product_id": stock.product_id,
-        "warehouse_id": stock.warehouse_id,
-        "reorder_level": stock.reorder_level
-    }
+        "data": {
+            "product_id": stock.product_id,
+            "warehouse_id": stock.warehouse_id,
+            "reorder_level": stock.reorder_level
+        }
+}
 
 @router.get("/low-stock")
 def get_low_stock(db: Session = Depends(get_db)):
@@ -348,21 +366,24 @@ def get_low_stock(db: Session = Depends(get_db)):
         len(low_stock)
     )
     
-    return [
-        {
-            "product_id":stock.product_id,
-            "product_name":stock.product.name,
-            "sku":stock.product.sku,
-            "warehouse_id":stock.warehouse_id,
-            "warehouse_name":stock.warehouse.name,
-            "warehouse_location":stock.warehouse.location,
-            "quantity":stock.quantity,
-            "reorder_level":stock.reorder_level,
-            "reorder_quantity":stock.reorder_level - stock.quantity
-            
-        }
-        for stock in low_stock
-    ]
+    return {
+        "success": True,
+        "message": "Low-stock report generated successfully",
+        "data": [
+            {
+                "product_id": stock.product_id,
+                "product_name": stock.product.name,
+                "sku": stock.product.sku,
+                "warehouse_id": stock.warehouse_id,
+                "warehouse_name": stock.warehouse.name,
+                "warehouse_location": stock.warehouse.location,
+                "quantity": stock.quantity,
+                "reorder_level": stock.reorder_level,
+                "reorder_quantity": stock.reorder_level - stock.quantity
+            }
+            for stock in low_stock
+        ]
+}
  
 @router.get("/movements")
 def get_stock_movements(
@@ -370,7 +391,7 @@ def get_stock_movements(
     warehouse_id: int | None = None,
     movement_type: str | None = None,
     skip:int=Query(default=0,ge=0),
-    limit:int = Query(default=20,ge=0,le=100),
+    limit:int = Query(default=20,ge=1,le=100),
     db: Session = Depends(get_db)
 ):
     query = db.query(StockMovement).options(
@@ -401,23 +422,27 @@ def get_stock_movements(
 
     
     return {
-        "total_recors":total_results,
-        "skip":skip,
-        "limit":limit,
-        "data":[
-        {
-            "id": movement.id,
-            "product_id": movement.product_id,
-            "product_name": movement.product.name,
-            "sku": movement.product.sku,
-            "warehouse_id": movement.warehouse_id,
-            "warehouse_name": movement.warehouse.name,
-            "movement_type": movement.movement_type,
-            "quantity": movement.quantity,
-            "created_at": movement.created_at
+        "success": True,
+        "message": "Stock movements retrieved successfully",
+        "data": {
+            "total_records": total_results,
+            "skip": skip,
+            "limit": limit,
+            "movements": [
+                {
+                    "id": movement.id,
+                    "product_id": movement.product_id,
+                    "product_name": movement.product.name,
+                    "sku": movement.product.sku,
+                    "warehouse_id": movement.warehouse_id,
+                    "warehouse_name": movement.warehouse.name,
+                    "movement_type": movement.movement_type,
+                    "quantity": movement.quantity,
+                    "created_at": movement.created_at
+                }
+                for movement in movements
+            ]
         }
-        for movement in movements
-        ]
     }
     
 @router.get("/summary")
@@ -449,10 +474,14 @@ def get_stock_summary(db:Session =Depends(get_db)):
         Warehouse.is_active == True
     ).scalar()
     logger.info("Inventory summary generated successfully")
-    return{
-        "total_products":total_products,
-        "total_units": total_units or 0,
-        "low_stock_count":low_stock_count,
-        "out_of_stock_count":out_of_stock_count,
-        "active_warehouses":active_warehouses   
-    }
+    return {
+        "success": True,
+        "message": "Stock summary retrieved successfully",
+        "data": {
+            "total_products": total_products,
+            "total_units": total_units or 0,
+            "low_stock_count": low_stock_count,
+            "out_of_stock_count": out_of_stock_count,
+            "active_warehouses": active_warehouses
+        }
+}

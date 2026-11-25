@@ -16,15 +16,19 @@ router = APIRouter(
 
 
 # GET all products
-@router.get("/",response_model=list[ProductResponse])
+@router.get("/")
 def get_products(db: Session = Depends(get_db)):
     products = db.query(Product).options(joinedload(Product.category),
                                          joinedload(Product.supplier)).all()
-    return products
+    return {
+        "success": True,
+        "message": "Products retrieved successfully",
+        "data": products
+}
 
 
 # GET product by ID
-@router.get("/{product_id}",response_model=ProductResponse)
+@router.get("/{product_id}")
 def get_product(
     product_id: int,
     db: Session = Depends(get_db)
@@ -41,11 +45,15 @@ def get_product(
             detail="Product not found"
         )
 
-    return product
+    return {
+        "success": True,
+        "message": "Product retrieved successfully",
+        "data": product
+}
 
 
 # CREATE product
-@router.post("/",response_model=ProductResponse)
+@router.post("/")
 def create_product(
     product: ProductCreate,
     db: Session = Depends(get_db)
@@ -56,10 +64,19 @@ def create_product(
         db.add(new_product)
         db.commit()
         db.refresh(new_product)
+        new_product = db.query(Product).options(
+                joinedload(Product.category),
+                joinedload(Product.supplier)
+            ).filter(
+                Product.id == new_product.id
+            ).first()
         
     except IntegrityError as e:
         db.rollback()
         print("Constraint name:", e.orig.diag.constraint_name)
+        
+        print(e.orig.diag.constraint_name)
+        
 
         error_message = str(e.orig)
 
@@ -80,11 +97,15 @@ def create_product(
             detail=detail
         )
 
-    return new_product
+    return {
+        "success": True,
+        "message": "Product created successfully",
+        "data": new_product
+}
 
 
 # PARTIALLY UPDATE product
-@router.patch("/{product_id}",response_model=ProductResponse)
+@router.patch("/{product_id}")
 def update_product(
     product_id: int,
     product: ProductUpdate,
@@ -117,11 +138,15 @@ def update_product(
             detail="Database constraint violation. Check whether the SKU already exists."
         )
 
-    return existing_product
+    return {
+        "success": True,
+        "message": "Product updated successfully",
+        "data": existing_product
+}
 
 
 # COMPLETELY REPLACE product
-@router.put("/{product_id}",response_model=ProductResponse)
+@router.put("/{product_id}")
 def replace_product(
     product_id: int,
     product: ProductCreate,
@@ -146,19 +171,32 @@ def replace_product(
         db.commit()
         db.refresh(existing_product)
 
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        print("Constraint name:", e.orig.diag.constraint_name)
+        error_message=str(e.orig)
+        
+        if "fk_products_category" in error_message:
+            detail="Invalid Product category"
+        elif "fk_supplier" in error_message:
+            detail="Invalid Supplier"
+        else:
+            detail="Database constraint violation. Check whether the SKU already exists."
 
         raise HTTPException(
             status_code=409,
-            detail="Database constraint violation. Check whether the SKU already exists."
+            detail=detail
         )
 
-    return existing_product
+    return {
+        "success": True,
+        "message": "Product replaced successfully",
+        "data": existing_product
+}
 
 
 # DELETE product
-@router.delete("/{product_id}",response_model=MessageResponse)
+@router.delete("/{product_id}")
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db)
@@ -185,7 +223,11 @@ def delete_product(
             detail="Cannot delete product because it has associated records"
     )
 
-    return {"message": "Product deleted successfully"}
+    return {
+        "success": True,
+        "message": "Product deleted successfully",
+        "data": None
+}
 
 
 @router.get("/{product_id}/supplier")

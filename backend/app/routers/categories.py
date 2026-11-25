@@ -16,7 +16,7 @@ router = APIRouter(
     prefix="/categories",
     tags=["Categories"]
 )
-@router.post("/", response_model=CategoryResponse)
+@router.post("/")
 def create_category(
     category: CategoryCreate,
     db: Session = Depends(get_db)
@@ -35,14 +35,22 @@ def create_category(
             detail="Category already exists"
         )
 
-    return new_category
+    return {
+        "success": True,
+        "message": "Category created successfully",
+        "data": new_category
+}
 
-@router.get("/", response_model=list[CategoryResponse])
+@router.get("/")
 def get_categories(db: Session = Depends(get_db)):
     categories = db.query(Category).all()
-    return categories
+    return {
+        "success": True,
+        "message": "Categories retrieved successfully",
+        "data": categories
+}
 
-@router.get("/{category_id}", response_model=CategoryResponse)
+@router.get("/{category_id}")
 def get_category(category_id: int, db: Session = Depends(get_db)):
 
     category = db.query(Category).filter(
@@ -55,9 +63,13 @@ def get_category(category_id: int, db: Session = Depends(get_db)):
             detail="Category not found"
         )
 
-    return category
+    return {
+        "success": True,
+        "message": "Category retrieved successfully",
+        "data": category
+}
 
-@router.patch("/{category_id}", response_model=CategoryResponse)
+@router.patch("/{category_id}")
 def update_category(
     category_id: int,
     category_data: CategoryUpdate,
@@ -89,9 +101,13 @@ def update_category(
             detail="Category name already exists"
         )
 
-    return category
+    return {
+        "success": True,
+        "message": "Category updated successfully",
+        "data": category
+}
 
-@router.delete("/{category_id}", response_model=MessageResponse)
+@router.delete("/{category_id}")
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db)
@@ -120,4 +136,8 @@ def delete_category(
     db.delete(category)
     db.commit()
 
-    return {"message": "Category deleted successfully"}
+    return {
+        "success": True,
+        "message": "Category deleted successfully",
+        "data": None
+}

@@ -18,7 +18,7 @@ router = APIRouter(
     tags=["Warehouses"]
 )
 
-@router.post('/',response_model=WarehouseResponse,status_code=201)
+@router.post('/',status_code=201)
 def create_warehouse(
     warehouse:WarehouseCreate,
     db:Session = Depends(get_db)
@@ -38,15 +38,23 @@ def create_warehouse(
             detail="Warehouse with the name already exists"
         )
         
-    return new_warehouse
+    return {
+        "success": True,
+        "message": "Warehouse created successfully",
+        "data": new_warehouse
+}
 
-@router.get("/",response_model=list[WarehouseResponse])
+@router.get("/")
 def get_warehouses(db:Session=Depends(get_db)):
     warehouses= db.query(Warehouse).all()
     
-    return warehouses
+    return {
+        "success": True,
+        "message": "Warehouses retrieved successfully",
+        "data": warehouses
+}
 
-@router.get("/{warehouse_id}",response_model=WarehouseResponse)
+@router.get("/{warehouse_id}")
 def get_warehouse(warehouse_id:int,db:Session = Depends(get_db)):
     warehouse=db.query(Warehouse).filter(
         Warehouse.id==warehouse_id
@@ -58,9 +66,13 @@ def get_warehouse(warehouse_id:int,db:Session = Depends(get_db)):
             detail="Warehouse Not Found"
         )
         
-    return warehouse
+    return {
+        "success": True,
+        "message": "Warehouse retrieved successfully",
+        "data": warehouse
+}
 
-@router.patch("/{warehouse_id}",response_model=WarehouseResponse)
+@router.patch("/{warehouse_id}")
 def update_warehouse(
     warehouse_id:int,
     warehouse_data:WarehouseUpdate,
@@ -90,10 +102,14 @@ def update_warehouse(
             detail="Warehouse with this name already exists"
         )
 
-    return warehouse
+    return {
+        "success": True,
+        "message": "Warehouse updated successfully",
+        "data": warehouse
+}
 
 
-@router.delete("/{warehouse_id}",response_model=MessageResponse,status_code=202)
+@router.delete("/{warehouse_id}",status_code=202)
 def delete_warehouse(
     warehouse_id:int,
     db:Session= Depends(get_db)
@@ -113,7 +129,6 @@ def delete_warehouse(
     ).first()
     
     if existing_stock:
-        db.rollback()
         raise HTTPException(
             status_code=409,
             detail="Cannot delete warehouse because it has stock records"
@@ -122,4 +137,8 @@ def delete_warehouse(
     db.delete(warehouse)
     db.commit()
 
-    return {"message": "Warehouse deleted successfully"}
+    return {
+        "success": True,
+        "message": "Warehouse deleted successfully",
+        "data": None
+}
