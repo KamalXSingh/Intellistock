@@ -1,4 +1,4 @@
--- SELECT * FROM products;
+ -- SELECT * FROM products;
 -- SELECT * FROM suppliers;
 -- SELECT * FROM product_suppliers
 
@@ -78,7 +78,7 @@
 -- SELECT * from products;
 
 -- select * from stock_movements
-select * from warehouse_stock
+-- select * from warehouse_stock
 
 -- SELECT 
 --     con.conname AS constraint_name,
@@ -92,4 +92,4 @@ select * from warehouse_stock
 
 -- select * from warehouse_stock;
 
-
+select * from users;

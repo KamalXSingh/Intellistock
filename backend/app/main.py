@@ -3,6 +3,7 @@ from app.routers import supplier
 from app.routers import categories
 from app.routers import warehouse
 from app.routers import warehouse_stock
+from app.routers import auth
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -50,6 +51,7 @@ app.include_router(supplier.router)
 app.include_router(categories.router)
 app.include_router(warehouse.router)
 app.include_router(warehouse_stock.router)
+app.include_router(auth.router)
 
 
 
